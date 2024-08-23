@@ -1,5 +1,5 @@
 [package]
-name = "gradient_descent"
+name = "rust_gradient_descent"
 version = "0.1.0"
 edition = "2021"
 
