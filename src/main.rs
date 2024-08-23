@@ -1,4 +1,4 @@
-use ndarray::{Array, Array1, ArrayView1, Dimension};
+use ndarray::{Array, Array1, Dimension};
 
 struct Adam<D: Dimension> {
     lr: f32,
@@ -25,27 +25,16 @@ impl<D: Dimension> Adam<D> {
     }
 
     fn update(&mut self, gradient: &Array<f32, D>) -> Array<f32, D> {
-        // Increase time step
         self.t += 1;
-
-        // Update biased first moment estimate m
-        self.m = self.m.clone() * self.b1 + gradient * (1.0 - self.b1);
-
-        // Update biased second raw moment estimate v
-        self.v = self.v.clone() * self.b2 + gradient.mapv(|g| g.powi(2)) * (1.0 - self.b2);
-
-        // Compute bias-corrected first moment estimate m_hat
-        let m_hat = self.m.clone() / (1.0 - self.b1.powi(self.t));
-
-        // Compute bias-corrected second raw moment estimate v_hat
-        let v_hat = self.v.clone() / (1.0 - self.b2.powi(self.t));
-
-        // Compute parameter update
+        self.m = &self.m * self.b1 + gradient * (1.0 - self.b1);
+        self.v = &self.v * self.b2 + gradient.mapv(|g| g.powi(2)) * (1.0 - self.b2);
+        let m_hat = &self.m / (1.0 - self.b1.powi(self.t));
+        let v_hat = &self.v / (1.0 - self.b2.powi(self.t));
         m_hat / (v_hat.mapv(f32::sqrt) + self.epsilon) * self.lr
     }
 }
 
-fn forward(x: ArrayView1<f32>, theta: ArrayView1<f32>) -> Array1<f32> {
+fn forward(x: &Array1<f32>, theta: &Array1<f32>) -> Array1<f32> {
     let mut result = Array1::from_elem(x.raw_dim(), theta[0]);
     let mut tmp_x = x.to_owned();
     for i in 1..theta.len() {
@@ -58,11 +47,7 @@ fn forward(x: ArrayView1<f32>, theta: ArrayView1<f32>) -> Array1<f32> {
 
 /// Performs forward and back propagation
 /// returns (loss, gradient)
-fn forwardback(
-    x: ArrayView1<f32>,
-    y: ArrayView1<f32>,
-    theta: ArrayView1<f32>,
-) -> (f32, Array1<f32>) {
+fn forwardback(x: &Array1<f32>, y: &Array1<f32>, theta: &Array1<f32>) -> (f32, Array1<f32>) {
     let denom = 1. / (x.len() as f32);
     let mean = |val: Array1<f32>| val.sum() * denom;
 
@@ -89,11 +74,10 @@ fn main() {
 
     // let x = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
     let x = Array1::linspace(-2.5, 2.5, 50);
-    let y = forward(x.view(), param.view());
+    let y = forward(&x, &param);
 
     for i in 0..1000 {
-        let (loss, gradient) =
-            forwardback(x.clone().view(), y.clone().view(), param2.clone().view());
+        let (loss, gradient) = forwardback(&x.clone(), &y.clone(), &param2);
         param2 = &param2 - &adam.update(&gradient);
         if i % 100 == 0 {
             println!("round: {i}, loss: {loss}")
@@ -111,7 +95,7 @@ mod tests {
     fn test_forward() {
         let param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
         let arr = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
-        let result = forward(arr.view(), param.view());
+        let result = forward(&arr, &param);
         assert_eq!(
             result.to_vec(),
             vec![10.8, 27.2, 52.6, 87., 130.4, 182.8, 244.2, 314.6]
@@ -124,8 +108,8 @@ mod tests {
         let param2 = Array1::from_vec(vec![3., 3., 5.]);
 
         let x = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
-        let y = forward(x.view(), param.view());
-        let (loss, gradient) = forwardback(x.view(), y.view(), param2.view());
+        let y = forward(&x, &param);
+        let (loss, gradient) = forwardback(&x, &y, &param2);
         assert_eq!(
             y.to_vec(),
             vec![10.8, 27.2, 52.6, 87., 130.4, 182.8, 244.2, 314.6]
