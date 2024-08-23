@@ -13,25 +13,43 @@ fn forward(x: ArrayView1<f32>, theta: ArrayView1<f32>) -> Array1<f32> {
 
 /// Performs forward and back propagation
 /// returns (loss, gradient)
-///
-/// TODO: blend forward and backward computation
 fn forwardback(
     x: ArrayView1<f32>,
     y: ArrayView1<f32>,
     theta: ArrayView1<f32>,
 ) -> (f32, Array1<f32>) {
+    let denom = 1. / (x.len() as f32);
+    let mean = |val: Array1<f32>| val.sum() * denom;
+
     let yhat = forward(x, theta);
-    let dLdyhat = yhat - y;
-    let pN = 1. / (x.len() as f32);
-    let mean = |val: Array1<f32>| val.sum() * pN;
-    let loss = mean(dLdyhat.clone() * dLdyhat.view()) * 0.5;
+    let dldyhat = yhat - y;
+    let loss = mean(dldyhat.mapv(|x| x * x)) * 0.5;
+
     let mut gradient = Array1::zeros(theta.raw_dim());
     let mut tmp_x = Array1::<f32>::ones(x.raw_dim());
+
     for i in 0..gradient.len() {
-        gradient[i] = mean(dLdyhat.clone() * tmp_x.clone());
+        gradient[i] = mean(dldyhat.clone() * tmp_x.clone());
         tmp_x = tmp_x * x;
     }
+
     return (loss, gradient);
+}
+
+fn main() {
+    let param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
+    let param2 = Array1::from_vec(vec![3., 3., 5.]);
+
+    let x = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
+    let y = forward(x.view(), param.view());
+    let yhat = forward(x.view(), param2.view());
+    let (loss, gradient) = forwardback(x.view(), y.view(), param2.view());
+
+    println!("Y: {}", y);
+    println!("Yhat: {}", yhat);
+
+    println!("Loss: {}", loss);
+    println!("Gradient: {}", gradient);
 }
 
 #[cfg(test)]
@@ -54,30 +72,14 @@ mod tests {
         let param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
         let param2 = Array1::from_vec(vec![3., 3., 5.]);
 
-        let X = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
-        let Y = forward(X.view(), param.view());
-        let (loss, gradient) = forwardback(X.view(), Y.view(), param2.view());
+        let x = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
+        let y = forward(x.view(), param.view());
+        let (loss, gradient) = forwardback(x.view(), y.view(), param2.view());
         assert_eq!(
-            Y.to_vec(),
+            y.to_vec(),
             vec![10.8, 27.2, 52.6, 87., 130.4, 182.8, 244.2, 314.6]
         );
         assert_eq!(loss, 140.09);
         assert_eq!(gradient.to_vec(), vec![12.8, 81.75, 554.25]);
     }
-}
-
-fn main() {
-    let param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
-    let param2 = Array1::from_vec(vec![3., 3., 5.]);
-
-    let x = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
-    let y = forward(x.view(), param.view());
-    let yhat = forward(x.view(), param2.view());
-    let (loss, gradient) = forwardback(x.view(), y.view(), param2.view());
-
-    println!("Y: {}", y);
-    println!("Yhat: {}", yhat);
-
-    println!("Loss: {}", loss);
-    println!("Gradient: {}", gradient);
 }
