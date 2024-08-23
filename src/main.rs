@@ -1,30 +1,30 @@
-use ndarray::{Array1, ArrayD, ArrayView1};
+use ndarray::{Array1, Array, Dimension, ArrayView1};
 
-struct Adam {
+struct Adam<D: Dimension> {
     lr: f32,
     b1: f32,
     b2: f32,
     t: i32,
-    m: ArrayD<f32>,
-    v: ArrayD<f32>,
+    m: Array<f32, D>,
+    v: Array<f32, D>,
     epsilon: f32,
 }
 
-impl Adam {
-    fn new(param: &ArrayD<f32>, lr: f32, b1: f32, b2: f32) -> Self {
+impl<D: Dimension> Adam<D> {
+    fn new(param: &Array<f32, D>, lr: f32, b1: f32, b2: f32) -> Self {
         let shape = param.raw_dim();
         Adam {
             lr,
             b1,
             b2,
             t: 0,
-            m: ArrayD::<f32>::zeros(shape.clone()), // Initialize m to zeros
-            v: ArrayD::<f32>::zeros(shape.clone()), // Initialize v to zeros
+            m: Array::<f32, D>::zeros(shape.clone()), // Initialize m to zeros
+            v: Array::<f32, D>::zeros(shape.clone()), // Initialize v to zeros
             epsilon: 1e-8,
         }
     }
 
-    fn update(&mut self, gradient: &ArrayD<f32>) -> ArrayD<f32> {
+    fn update(&mut self, gradient: &Array<f32, D>) -> Array<f32, D> {
         // Increase time step
         self.t += 1;
 
