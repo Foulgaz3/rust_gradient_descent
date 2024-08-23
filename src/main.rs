@@ -36,11 +36,11 @@ impl<D: Dimension> Adam<D> {
 
 fn forward(x: &Array1<f32>, theta: &Array1<f32>) -> Array1<f32> {
     let mut result = Array1::from_elem(x.raw_dim(), theta[0]);
-    let mut tmp_x = x.to_owned();
+    let mut tmp_x = x.clone();
     for i in 1..theta.len() {
         let b: f32 = theta[i];
-        result = result + b * tmp_x.clone();
-        tmp_x = tmp_x * x;
+        result = result + b * &tmp_x;
+        tmp_x *= x;
     }
     result
 }
@@ -59,8 +59,8 @@ fn forwardback(x: &Array1<f32>, y: &Array1<f32>, theta: &Array1<f32>) -> (f32, A
     let mut tmp_x = Array1::<f32>::ones(x.raw_dim());
 
     for i in 0..gradient.len() {
-        gradient[i] = mean(dldyhat.clone() * tmp_x.clone());
-        tmp_x = tmp_x * x;
+        gradient[i] = mean(&dldyhat * &tmp_x);
+        tmp_x *= x;
     }
 
     (loss, gradient)
@@ -70,14 +70,14 @@ fn main() {
     let param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
     let mut param2 = Array1::from_vec(vec![3., 3., 5.]);
 
-    let mut adam = Adam::new(&param2.clone(), 0.01, 0.9, 0.999);
+    let mut adam = Adam::new(&param2, 0.01, 0.9, 0.999);
 
     // let x = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
     let x = Array1::linspace(-2.5, 2.5, 50);
     let y = forward(&x, &param);
 
     for i in 0..1000 {
-        let (loss, gradient) = forwardback(&x.clone(), &y.clone(), &param2);
+        let (loss, gradient) = forwardback(&x, &y, &param2);
         param2 = &param2 - &adam.update(&gradient);
         if i % 100 == 0 {
             println!("round: {i}, loss: {loss}")
