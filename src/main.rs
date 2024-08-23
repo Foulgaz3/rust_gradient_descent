@@ -8,7 +8,7 @@ fn forward(x: ArrayView1<f32>, theta: ArrayView1<f32>) -> Array1<f32> {
         result = result + b * tmp_x.clone();
         tmp_x = tmp_x * x;
     }
-    return result;
+    result
 }
 
 /// Performs forward and back propagation
@@ -33,7 +33,7 @@ fn forwardback(
         tmp_x = tmp_x * x;
     }
 
-    return (loss, gradient);
+    (loss, gradient)
 }
 
 fn main() {
