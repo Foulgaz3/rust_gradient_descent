@@ -1,4 +1,49 @@
-use ndarray::{Array1, ArrayView1};
+use ndarray::{Array1, ArrayD, ArrayView1};
+
+struct Adam {
+    lr: f32,
+    b1: f32,
+    b2: f32,
+    t: i32,
+    m: ArrayD<f32>,
+    v: ArrayD<f32>,
+    epsilon: f32,
+}
+
+impl Adam {
+    fn new(param: &ArrayD<f32>, lr: f32, b1: f32, b2: f32) -> Self {
+        let shape = param.raw_dim();
+        Adam {
+            lr,
+            b1,
+            b2,
+            t: 0,
+            m: ArrayD::<f32>::zeros(shape.clone()), // Initialize m to zeros
+            v: ArrayD::<f32>::zeros(shape.clone()), // Initialize v to zeros
+            epsilon: 1e-8,
+        }
+    }
+
+    fn update(&mut self, gradient: &ArrayD<f32>) -> ArrayD<f32> {
+        // Increase time step
+        self.t += 1;
+
+        // Update biased first moment estimate m
+        self.m = self.m.clone() * self.b1 + gradient * (1.0 - self.b1);
+
+        // Update biased second raw moment estimate v
+        self.v = self.v.clone() * self.b2 + gradient.mapv(|g| g.powi(2)) * (1.0 - self.b2);
+
+        // Compute bias-corrected first moment estimate m_hat
+        let m_hat = self.m.clone() / (1.0 - self.b1.powi(self.t));
+
+        // Compute bias-corrected second raw moment estimate v_hat
+        let v_hat = self.v.clone() / (1.0 - self.b2.powi(self.t));
+
+        // Compute parameter update
+        m_hat / (v_hat.mapv(f32::sqrt) + self.epsilon) * self.lr
+    }
+}
 
 fn forward(x: ArrayView1<f32>, theta: ArrayView1<f32>) -> Array1<f32> {
     let mut result = Array1::from_elem(x.raw_dim(), theta[0]);
@@ -38,18 +83,33 @@ fn forwardback(
 
 fn main() {
     let param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
-    let param2 = Array1::from_vec(vec![3., 3., 5.]);
+    let mut param2 = Array1::from_vec(vec![3., 3., 5.]);
 
-    let x = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
+    let mut adam = Adam::new(&param2.clone().into_dyn(), 0.01, 0.9, 0.999);
+
+    // let x = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
+    let x = Array1::from_vec({
+        let span = 5.;
+        let n = 50;
+        let bottom = -0.5 * span;
+        let step = span / (n as f32 - 1.);
+        let mut tmp = Vec::with_capacity(n);
+        for i in 0..n {
+            tmp.push(step * i as f32 + bottom);
+        }
+        tmp
+    });
     let y = forward(x.view(), param.view());
-    let yhat = forward(x.view(), param2.view());
-    let (loss, gradient) = forwardback(x.view(), y.view(), param2.view());
+    for i in 0..1000 {
+        let (loss, gradient) =
+            forwardback(x.clone().view(), y.clone().view(), param2.clone().view());
+        param2 = &param2 - &adam.update(&gradient.into_dyn()).into_flat();
+        if i % 100 == 0 {
+            println!("round: {i}, loss: {loss}")
+        }
+    }
 
-    println!("Y: {}", y);
-    println!("Yhat: {}", yhat);
-
-    println!("Loss: {}", loss);
-    println!("Gradient: {}", gradient);
+    println!("Final Parameters: {param2}");
 }
 
 #[cfg(test)]
