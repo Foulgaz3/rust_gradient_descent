@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array, Dimension, ArrayView1};
+use ndarray::{Array, Array1, ArrayView1, Dimension};
 
 struct Adam<D: Dimension> {
     lr: f32,
@@ -85,25 +85,16 @@ fn main() {
     let param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
     let mut param2 = Array1::from_vec(vec![3., 3., 5.]);
 
-    let mut adam = Adam::new(&param2.clone().into_dyn(), 0.01, 0.9, 0.999);
+    let mut adam = Adam::new(&param2.clone(), 0.01, 0.9, 0.999);
 
     // let x = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
-    let x = Array1::from_vec({
-        let span = 5.;
-        let n = 50;
-        let bottom = -0.5 * span;
-        let step = span / (n as f32 - 1.);
-        let mut tmp = Vec::with_capacity(n);
-        for i in 0..n {
-            tmp.push(step * i as f32 + bottom);
-        }
-        tmp
-    });
+    let x = Array1::linspace(-2.5, 2.5, 50);
     let y = forward(x.view(), param.view());
+
     for i in 0..1000 {
         let (loss, gradient) =
             forwardback(x.clone().view(), y.clone().view(), param2.clone().view());
-        param2 = &param2 - &adam.update(&gradient.into_dyn()).into_flat();
+        param2 = &param2 - &adam.update(&gradient);
         if i % 100 == 0 {
             println!("round: {i}, loss: {loss}")
         }
