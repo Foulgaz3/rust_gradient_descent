@@ -70,6 +70,9 @@ fn main() {
     let ideal_param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
     let mut param = Array1::from_vec(vec![3., 3., 5.]);
 
+    println!("Ideal Parameters: {}", &ideal_param);
+    println!("Initial Parameters: {}", &param);
+
     let mut adam = Adam::new(&param, 0.01, 0.9, 0.999);
 
     let x = Array1::linspace(-2.5, 2.5, 50);
