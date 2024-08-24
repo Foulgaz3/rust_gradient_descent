@@ -70,8 +70,8 @@ fn main() {
     let ideal_param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
     let mut param = Array1::from_vec(vec![3., 3., 5.]);
 
-    println!("Ideal Parameters: {}", &ideal_param);
-    println!("Initial Parameters: {}", &param);
+    println!("Ideal Parameters  : {:>3.1}", &ideal_param);
+    println!("Initial Parameters: {:>3.1}\n", &param);
 
     let mut adam = Adam::new(&param, 0.01, 0.9, 0.999);
 
@@ -82,11 +82,11 @@ fn main() {
         let (loss, gradient) = forwardback(&x, &y, &param);
         param = &param - &adam.update(&gradient);
         if i % 100 == 0 {
-            println!("round: {i}, loss: {loss}")
+            println!("round: {:3}, loss: {:.12}", i, loss)
         }
     }
 
-    println!("Final Parameters: {param}");
+    println!("\nFinal Parameters: {param}");
 }
 
 #[cfg(test)]
