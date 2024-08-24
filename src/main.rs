@@ -72,7 +72,6 @@ fn main() {
 
     let mut adam = Adam::new(&param2, 0.01, 0.9, 0.999);
 
-    // let x = Array1::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.]);
     let x = Array1::linspace(-2.5, 2.5, 50);
     let y = forward(&x, &param);
 
