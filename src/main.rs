@@ -67,23 +67,23 @@ fn forwardback(x: &Array1<f32>, y: &Array1<f32>, theta: &Array1<f32>) -> (f32, A
 }
 
 fn main() {
-    let param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
-    let mut param2 = Array1::from_vec(vec![3., 3., 5.]);
+    let ideal_param = Array1::from_vec(vec![3.4, 2.9, 4.5]);
+    let mut param = Array1::from_vec(vec![3., 3., 5.]);
 
-    let mut adam = Adam::new(&param2, 0.01, 0.9, 0.999);
+    let mut adam = Adam::new(&param, 0.01, 0.9, 0.999);
 
     let x = Array1::linspace(-2.5, 2.5, 50);
-    let y = forward(&x, &param);
+    let y = forward(&x, &ideal_param);
 
     for i in 0..1000 {
-        let (loss, gradient) = forwardback(&x, &y, &param2);
-        param2 = &param2 - &adam.update(&gradient);
+        let (loss, gradient) = forwardback(&x, &y, &param);
+        param = &param - &adam.update(&gradient);
         if i % 100 == 0 {
             println!("round: {i}, loss: {loss}")
         }
     }
 
-    println!("Final Parameters: {param2}");
+    println!("Final Parameters: {param}");
 }
 
 #[cfg(test)]
